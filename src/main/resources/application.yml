@@ -36,3 +36,10 @@ springdoc:
   api-docs:
     groups:
       enabled: true
+
+kafka:
+  consumer:
+    bootstrap-servers: localhost:9092
+    group-id: lecture
+  producer:
+    bootstrap-servers: localhost:9092

@@ -11,6 +11,8 @@ import com.week3team2.lectureservice.repository.LectureRepository;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -18,13 +20,16 @@ import reactor.core.publisher.Mono;
 @Service
 public class LectureServiceImpl implements LectureService {
 
+    private static final String TOPIC = "lecture";
     private final LectureRepository lectureRepository;
     private final LectureContentRepository lectureContentRepository;
+    private final KafkaTemplate<String, String> kafkaTemplate;
     private final LectureInfoRepository lectureInfoRepository;
 
-    public LectureServiceImpl(LectureRepository lectureRepository, LectureContentRepository lectureContentRepository, LectureInfoRepository lectureInfoRepository) {
+    public LectureServiceImpl(LectureRepository lectureRepository, LectureContentRepository lectureContentRepository, KafkaTemplate kafkaTemplate, LectureInfoRepository lectureInfoRepository) {
         this.lectureRepository = lectureRepository;
         this.lectureContentRepository = lectureContentRepository;
+        this.kafkaTemplate = kafkaTemplate;
         this.lectureInfoRepository = lectureInfoRepository;
     }
 
@@ -45,7 +50,17 @@ public class LectureServiceImpl implements LectureService {
     @Override
     public Mono<LectureContent> uploadContent(LectureContent lectureContent) {
         lectureContent.setContentType("lecture");
+
+        String message = "New Content Uploaded : " + lectureContent.getLectureId().toString();
+        this.kafkaTemplate.send(TOPIC, message);
+
         return lectureContentRepository.save(lectureContent);
+    }
+
+    @KafkaListener(topics = TOPIC, groupId = "lecture")
+    public void consume(String message) {
+        System.out.println("** Log System **");
+        System.out.println(message);
     }
 
     // 강사에 매칭된 강의 목록 조회
